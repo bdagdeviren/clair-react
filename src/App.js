@@ -4,7 +4,7 @@ import axios from 'axios';
 
 class Clock extends React.Component {
 
-    REST_ENDPOINT = 'http://127.0.0.1:8081/';
+    REST_ENDPOINT = 'http://192.168.56.102:8081/';
 
     constructor(props) {
         super(props)
@@ -21,16 +21,28 @@ class Clock extends React.Component {
     }
 
     async onSubmit(e){
-        console.log("Girdi");
+        this.setState({formDisplay:"none",loadingDisplay:"block",loadingMessage: "Uploading Starting"})
         e.preventDefault();
         let res = await this.uploadFile(this.state.file);
-        console.log(res.status)
+        console.log(res.status);
         if(res.status === 200){
+            this.setState({
+                loadingMessage: "Uploading Successful"
+            });
             let parseuploadfileres = JSON.parse(JSON.stringify(res.data));
-            let ifilename = parseuploadfileres.filename;
-            console.log(ifilename)
-            let postclairres = await this.postLayerToClair(ifilename);
-            console.log(postclairres.data);
+            let postclairres = await this.postLayerToClair(parseuploadfileres["Filename"]);
+            if(postclairres.status === 200) {
+                this.setState({
+                    loadingMessage: "Uploading Successful"
+                });
+                let postfileres = JSON.parse(JSON.stringify(postclairres.data));
+                console.log(postfileres)
+                let parseclairres = await this.parsedLayersVulnerability(postfileres);
+                console.log(parseclairres.data);
+            }
+        }
+        else {
+
         }
     }
 
@@ -49,7 +61,15 @@ class Clock extends React.Component {
     }
 
     async postLayerToClair(filename){
-        return  await axios.post(this.REST_ENDPOINT+"postlayertoclair", filename,{
+        return  await axios.post(this.REST_ENDPOINT+"postlayertoclair?filename="+filename,"",{
+            headers: {
+                'content-type': 'text/plain'
+            }
+        });
+    }
+
+    async parsedLayersVulnerability(layers){
+        return  await axios.post(this.REST_ENDPOINT+"parsedlayervulnerability",layers,{
             headers: {
                 'content-type': 'text/plain'
             }
